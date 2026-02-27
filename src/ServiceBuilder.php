@@ -11,6 +11,7 @@ class ServiceBuilder
     private ?string $class = null;
     private mixed $factory = null;
     private array $postOperations = [];
+    private bool $public = false;
 
     private mixed $service = null;
     private bool $serviceAvailable = false;
@@ -46,7 +47,6 @@ class ServiceBuilder
             $reflectionFactory = new ReflectionFunction($factory);
             $arguments = ArgumentBuilder::buildArguments(
                 $reflectionFactory,
-                $reflectionFactory->getName(),
                 $di,
                 $this->constructorArguments
             );
@@ -54,6 +54,7 @@ class ServiceBuilder
             if ($this->class !== null && !is_a($service, $this->class)) {
                 throw new Exception(sprintf("Service %s is not of class %s.", $this->serviceName, $this->class));
             }
+            return $service;
         } else {
             $class = $this->class ?? $this->serviceName;
             if (!class_exists($class)) {
@@ -64,21 +65,19 @@ class ServiceBuilder
             if ($constructor !== null) {
                 $arguments = ArgumentBuilder::buildArguments(
                     $constructor,
-                    $constructor->getName(),
-                    $di,
+                    $this->di,
                     $this->constructorArguments
                 );
             } else {
                 $arguments = [];
             }
-
             return new $class(...$arguments);
         }
     }
 
     private function applyServiceDefinition(mixed $serviceDefinition): self
     {
-        if (!is_callable($serviceDefinition)) {
+        if (is_callable($serviceDefinition)) {
             $ret = $serviceDefinition($this) ?? $this;
             if ($ret !== $this) {
                 $this->setService($ret);
@@ -93,7 +92,7 @@ class ServiceBuilder
 
     public function isPublic(): bool
     {
-        return true;
+        return $this->public;
     }
 
     public function getPostOperation(): ?callable
@@ -129,18 +128,26 @@ class ServiceBuilder
 
     public function setFactory(callable $factory): self
     {
-        $this->factory $factory;
+        $this->factory = $factory;
         return $this;
     }
 
     public function arguments(array $arguments): self
     {
-        $this->constructorArguments = array_merge($this->constructorArguments, $arguments);
+        foreach ($arguments as $index => $value) {
+            $this->constructorArguments[$index] = $value;
+        }
         return $this;
     }
 
     public function argument(string|int $index, mixed $value): self
     {
         return $this->arguments([$index => $value]);
+    }
+
+    public function setPublic(bool $public = true): self
+    {
+        $this->public = $public;
+        return $this;
     }
 }

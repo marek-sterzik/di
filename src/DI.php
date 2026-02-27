@@ -57,7 +57,7 @@ class DI
                 if ($postOperation !== null) {
                     $this->postOperations[] = $postOperation;
                 }
-                $this->services[$serviceName] = $definition;
+                $this->services[$serviceName] = $service;
                 if (count($this->recursionProtection) <= 1) {
                     while (!empty($this->postOperations)) {
                         $postOperations = $this->postOperations;

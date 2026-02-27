@@ -2,19 +2,25 @@
 
 namespace Sterzik\DI;
 
+use Exception;
 use ReflectionFunctionAbstract;
+use ReflectionType;
+use ReflectionParameter;
+use ReflectionNamedType;
+use ReflectionMethod;
+
 
 class ArgumentBuilder
 {
     public static function buildArguments(
         ?ReflectionFunctionAbstract $function,
-        string $functionName,
         DI $di,
         array $customArgs
     ): array {
         if ($function === null) {
             return [];
         }
+        $functionName = self::getReflectionName($function);
         $arguments = [];
         foreach ($function->getParameters() as $index => $parameter) {
             $name = $parameter->getName();
@@ -35,9 +41,18 @@ class ArgumentBuilder
         return $arguments;
     }
 
+    private static function getReflectionName(ReflectionFunctionAbstract $function): string
+    {
+        if ($function instanceof ReflectionMethod) {
+            return $function->getDeclaringClass()->getName() . "::" . $function->getName() . "()";
+        } else {
+            return $function->getName() . "()";
+        }
+    }
+
     private static function findArgumentByType(
         ?ReflectionType $type,
-        self $di,
+        DI $di,
         ReflectionParameter $parameter,
         string $argumentName,
         string $functionName
@@ -54,7 +69,7 @@ class ArgumentBuilder
             return null;
         }
 
-        throw new Exception(sprintf("Cannot instantiate argument %s of %s by autowire", $argumentName, $functionName));
+        throw new Exception(sprintf("Cannot instantiate argument '%s' of '%s' by autowire", $argumentName, $functionName));
     }
 
 }
