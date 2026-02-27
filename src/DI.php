@@ -28,7 +28,7 @@ class DI
                 throw new Exception(sprintf("Cannot find service file: %s", $serviceDefinitions));
             }
         }
-        if (!is_array($serviceDefinitions) {
+        if (!is_array($serviceDefinitions)) {
             throw new Exception("Service definitons must be an array");
         }
         $this->definitions = $serviceDefinitions;
