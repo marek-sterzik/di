@@ -11,3 +11,4 @@ This is a simple dependency-injection library. The goals of this library are:
 * support symfony-like autowiring feature
 * handle even more complicated scenarios including circular references
 * configuration is not compatible with the symfony DI component
+

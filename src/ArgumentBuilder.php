@@ -9,13 +9,15 @@ use ReflectionParameter;
 use ReflectionNamedType;
 use ReflectionMethod;
 
+use Sterzik\DI\Exception\InvalidConfigurationException;
 
 class ArgumentBuilder
 {
     public static function buildArguments(
         ?ReflectionFunctionAbstract $function,
         DI $di,
-        array $customArgs
+        array $customArgs,
+        bool $autowire
     ): array {
         if ($function === null) {
             return [];
@@ -32,11 +34,17 @@ class ArgumentBuilder
                 unset($customArgs[$name]);
             } else {
                 $type = $parameter->getType();
-                $arguments[] = self::findArgumentByType($type, $di, $parameter, $name, $functionName);
+                if ($autowire) {
+                    $arguments[] = self::findArgumentByType($type, $di, $parameter, $name, $functionName);
+                } else {
+                    throw new InvalidConfigurationException(
+                        sprintf("Cannot find service for argument %i of %s", $index, $functionName)
+                    );
+                }
             }
         }
         if (!empty($customArgs)) {
-            throw new Exception(sprintf("Too much arguments for %s", $functionName));
+            throw new InvalidConfigurationException(sprintf("Too much arguments for %s", $functionName));
         }
         return $arguments;
     }
@@ -69,7 +77,7 @@ class ArgumentBuilder
             return null;
         }
 
-        throw new Exception(sprintf("Cannot instantiate argument '%s' of '%s' by autowire", $argumentName, $functionName));
+        throw new InvalidConfigurationException(sprintf("Cannot instantiate argument '%s' of '%s' by autowire", $argumentName, $functionName));
     }
 
 }

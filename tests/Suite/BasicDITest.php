@@ -27,7 +27,7 @@ class BasicDITest extends AbstractTestCase
     public function testExplicitArguments(): void
     {
         $config = [
-            Test3::class => fn($builder) => $builder->argument("value", "test3"),
+            Test3::class => fn($builder) => $builder->setArgument("value", "test3"),
         ];
         $di = $this->createDI($config);
         $this->assertInstanceof(DI::class, $di);
@@ -40,7 +40,7 @@ class BasicDITest extends AbstractTestCase
     public function testExplicitArgumentsPositional(): void
     {
         $config = [
-            Test3::class => fn($builder) => $builder->argument(2, "test3"),
+            Test3::class => fn($builder) => $builder->setArgument(2, "test3"),
         ];
         $di = $this->createDI($config);
         $this->assertInstanceof(DI::class, $di);

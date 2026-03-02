@@ -9,6 +9,11 @@ use ReflectionParameter;
 use ReflectionType;
 use ReflectionNamedType;
 
+use Sterzik\DI\Exception\CircularReferenceException;
+use Sterzik\DI\Exception\PrivateServiceException;
+use Sterzik\DI\Exception\InvalidConfigurationException;
+use Sterzik\DI\Exception\ServiceDoesNotExistException;
+
 class DI
 {
     private static ?self $instance = null;
@@ -25,18 +30,25 @@ class DI
             if (file_exists($serviceDefinitions)) {
                 $serviceDefinitions = include($servicesDefinitions);
             } else {
-                throw new Exception(sprintf("Cannot find service file: %s", $serviceDefinitions));
+                throw new InvalidConfigurationException(sprintf("Cannot find service file: %s", $serviceDefinitions));
             }
         }
         if (!is_array($serviceDefinitions)) {
-            throw new Exception("Service definitons must be an array");
+            throw new InvalidConfigurationException("Service definitons must be an array");
         }
         $this->definitions = $serviceDefinitions;
     }
 
     public function has(string $serviceName): bool
     {
-        return class_exists($serviceName) || !empty($this->buildServiceDefinitions($serviceName));
+        try {
+            $this->get($serviceName);
+            return true;
+        } catch (ServiceDoesNotExistException $e) {
+            return false;
+        } catch (PrivateServiceException $e) {
+            return false;
+        }
     }
 
     public function get(string $serviceName): mixed
@@ -44,7 +56,7 @@ class DI
         if (!array_key_exists($serviceName, $this->services)) {
             $definitions = $this->buildServiceDefinitions($serviceName);
             if (isset($tihs->recursionProtection[$serviceName])) {
-                throw new Exception(sprintf("Circular definition of service %s detected.", $serviceName));
+                throw new CircularReferenceException(sprintf("Circular definition of service %s detected.", $serviceName));
             }
             $this->recursionProtection[$serviceName] = true;
             try {
@@ -78,7 +90,7 @@ class DI
                 $postOperation();
             }
             if (!($this->publicServices[$serviceName] ?? false)) {
-                throw new Exception(sprintf("Cannot access private service %s", $serviceName));
+                throw new PrivateServiceException(sprintf("Cannot access private service %s", $serviceName));
             }
         }
         return $this->services[$serviceName];
@@ -90,6 +102,9 @@ class DI
         $last = count($serviceNameParsed) - 1;
         $definitions = [];
         $part = "";
+        if (array_key_exists('\\', $this->definitions)) {
+            $definitions[] = $this->definitions['\\'];
+        }
         foreach ($serviceNameParsed as $i => $serviceNamePart) {
             $part .= $serviceNamePart . (($i !== $last) ? '\\' : '');
             if (array_key_exists($part, $this->definitions)) {
