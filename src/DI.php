@@ -15,9 +15,13 @@ use Sterzik\DI\Exception\MissingConfigurationException;
 use Sterzik\DI\Exception\InvalidConfigurationException;
 use Sterzik\DI\Exception\ServiceDoesNotExistException;
 
-class DI
+final class DI
 {
+    const DEFAULT_DI_SERVICE_DEFINITION_FILE = "config/services.php";
+
+    private static mixed $serviceDefinitions = null;
     private static ?self $instance = null;
+    private static bool $instantiateMain = false;
 
     private array $definitions = [];
     private array $services = [];
@@ -25,11 +29,44 @@ class DI
     private array $postOperations = [];
     private array $publicServices = [];
 
+    public static function setServiceDefinitions(string|array $serviceDefinitions): void
+    {
+        if (self::$instance !== null) {
+            throw new InvalidConfigurationException(
+                "Service definitons must be passed before DI::instance() is called"
+            );
+        }
+        self::$serviceDefinitions = $serviceDefinitions;
+    }
+
+    public static function instance(): self
+    {
+        if (self::$instance === null) {
+            if (self::$serviceDefinitions !== null) {
+                $serviceDefinitions = self::$serviceDefinitions;
+            } elseif (defined("DI_SERVICE_DEFINITIONS")) {
+                $serviceDefinitions = DI_SERVICE_DEFINITIONS;
+            } else {
+                $serviceDefinitions = self::DEFAULT_DI_SERVICE_DEFINITION_FILE;
+            }
+            self::$instantiateMain = true;
+            try {
+                self::$instance = new self($serviceDefinitions);
+            } finally {
+                self::$instantiateMain = false;
+            }
+        }
+        return self::$instance;
+    }
+
     public function __construct(string|array $serviceDefinitions)
     {
         if (is_string($serviceDefinitions)) {
+            $serviceDefinitions = Path::resolve($serviceDefinitions);
             if (file_exists($serviceDefinitions)) {
                 $serviceDefinitions = include($serviceDefinitions);
+            } else if(self::$instantiateMain) {
+                $serviceDefinitions = [];
             } else {
                 throw new MissingConfigurationException(sprintf("Cannot find service file: %s", $serviceDefinitions));
             }
