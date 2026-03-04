@@ -23,7 +23,19 @@ class ArgumentBuilder
         $arguments = [];
         foreach ($function->getParameters() as $index => $parameter) {
             $name = $parameter->getName();
-            if (array_key_exists($index, $customArgs)) {
+            if ($parameter->isVariadic()) {
+                if (array_key_exists($index, $customArgs)) {
+                    do {
+                        $arguments[] = $customArgs[$index];
+                        unset($customArgs[$index]);
+                        $index++;
+                    } while (array_key_exists($index, $customArgs));
+                } elseif (array_key_exists($name, $customArgs)) {
+                    $arguments[] = $customArgs[$name];
+                    unset($customArgs[$name]);
+                }
+                break;
+            } else if (array_key_exists($index, $customArgs)) {
                 $arguments[] = $customArgs[$index];
                 unset($customArgs[$index]);
             } else if (array_key_exists($name, $customArgs)) {
@@ -39,6 +51,10 @@ class ArgumentBuilder
                     );
                 }
             }
+        }
+        while (array_key_exists($count = count($arguments), $customArgs)) {
+            $arguments[] = $customArgs[$count];
+            unset($customArgs[$count]);
         }
         if (!empty($customArgs)) {
             throw new InvalidConfigurationException(sprintf("Too much arguments for %s", $functionName));

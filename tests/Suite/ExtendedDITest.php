@@ -211,13 +211,17 @@ class ExtendedDITest extends AbstractTestCase
                 ->call("addValueImplicit")
                 ->call("addValueNull", "v3")
                 ->call("addValueNull")
+                ->call("addValueVariadic", "x")
+                ->call("addValueVariadic", "y", "y1", "y2")
+                ->call("addValueVariadic", "z", values: "z1")
+                ->call("addAllValues", "A", "B", "C")
         ];
 
         $di = $this->createDI($config);
 
         $testValues = $di->get(TestValues::class);
         $this->assertInstanceof(TestValues::class, $testValues);
-        $this->assertSame("c,v1,v2,value,string,v3,null", $testValues->getValuesString());
+        $this->assertSame("c,v1,v2,value,string,v3,null,x,y,y1,y2,z,z1,A,B,C", $testValues->getValuesString());
     }
 }
 

@@ -31,6 +31,23 @@ class TestValues
         return $this;
     }
 
+    public function addValueVariadic(string $value, string ...$values): self
+    {
+        $this->addValue($value);
+        foreach ($values as $value) {
+            $this->addValue($value);
+        }
+        return $this;
+    }
+
+    public function addAllValues(): self
+    {
+        foreach (func_get_args() as $arg) {
+            $this->addValue($arg);
+        }
+        return $this;
+    }
+
     public function getValues(): array
     {
         return $this->values;
