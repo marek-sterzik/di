@@ -7,11 +7,11 @@ use Sterzik\DI\DI;
 
 class AbstractTestCase extends TestCase
 {
-    protected function createDI(array|string $definitions = [], bool $publicService = true): DI
+    protected function createDI(array|string $definitions = []): DI
     {
         if (is_string($definitions)) {
             $definitions = TEST_CONFIG_DIR . "/" . $definitions;
         }
-        return new DI($definitions, $publicService);
+        return new DI($definitions);
     }
 }

@@ -11,6 +11,7 @@ use ReflectionNamedType;
 
 use Sterzik\DI\Exception\CircularReferenceException;
 use Sterzik\DI\Exception\PrivateServiceException;
+use Sterzik\DI\Exception\MissingConfigurationException;
 use Sterzik\DI\Exception\InvalidConfigurationException;
 use Sterzik\DI\Exception\ServiceDoesNotExistException;
 
@@ -24,13 +25,13 @@ class DI
     private array $postOperations = [];
     private array $publicServices = [];
 
-    public function __construct(string|array $serviceDefinitions, private bool $publicContainer = true)
+    public function __construct(string|array $serviceDefinitions)
     {
         if (is_string($serviceDefinitions)) {
             if (file_exists($serviceDefinitions)) {
-                $serviceDefinitions = include($servicesDefinitions);
+                $serviceDefinitions = include($serviceDefinitions);
             } else {
-                throw new InvalidConfigurationException(sprintf("Cannot find service file: %s", $serviceDefinitions));
+                throw new MissingConfigurationException(sprintf("Cannot find service file: %s", $serviceDefinitions));
             }
         }
         if (!is_array($serviceDefinitions)) {
@@ -55,7 +56,7 @@ class DI
     {
         if (!array_key_exists($serviceName, $this->services)) {
             $definitions = $this->buildServiceDefinitions($serviceName);
-            if (isset($tihs->recursionProtection[$serviceName])) {
+            if (isset($this->recursionProtection[$serviceName])) {
                 throw new CircularReferenceException(sprintf("Circular definition of service %s detected.", $serviceName));
             }
             $this->recursionProtection[$serviceName] = true;
@@ -63,7 +64,7 @@ class DI
                 $builder = new ServiceBuilder($this, $serviceName, $definitions);
                 $service = $builder->build();
                 $postOperation = $builder->getPostOperation();
-                if ($this->publicContainer || $builder->isPublic()) {
+                if ($builder->isPublic()) {
                     $this->publicServices[$serviceName] = true;
                 }
                 if ($postOperation !== null) {

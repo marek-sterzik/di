@@ -4,6 +4,7 @@ namespace Tests\Suite;
 
 use Exception;
 use Sterzik\DI\DI;
+use Sterzik\DI\Exception\InvalidConfigurationException;
 use Tests\DIServices\Test1;
 use Tests\DIServices\Test2;
 use Tests\DIServices\Test3;
@@ -55,9 +56,18 @@ class BasicDITest extends AbstractTestCase
         $di = $this->createDI();
         $this->assertInstanceof(DI::class, $di);
 
-        $this->expectException(Exception::class);
+        $this->expectException(InvalidConfigurationException::class);
         $this->expectExceptionMessageMatches('/value.*Test3.*autowire/');
         $test3 = $di->get(Test3::class);
 
+    }
+
+    public function testConfigFileLoading(): void
+    {
+        $di = $this->createDI("test.php");
+        $this->assertInstanceof(DI::class, $di);
+
+        $test1 = $di->get("test");
+        $this->assertInstanceof(Test1::class, $test1);
     }
 }

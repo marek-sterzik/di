@@ -15,7 +15,7 @@ class ServiceBuilder
     private ?string $class = null;
     private mixed $factory = null;
     private array $postOperations = [];
-    private bool $public = false;
+    private bool $public = true;
     private bool $autowire = true;
     private bool $requireExplicitClass = false;
 
