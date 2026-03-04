@@ -7,7 +7,6 @@ use ReflectionMethod;
 use ReflectionClass;
 
 use Sterzik\DI\Exception\InvalidConfigurationException;
-use Sterzik\DI\Exception\NotImplementedException;
 use Sterzik\DI\Exception\ServiceDoesNotExistException;
 
 class ServiceBuilder
@@ -30,7 +29,7 @@ class ServiceBuilder
     public function build(): mixed
     {
         foreach ($this->serviceDefinitions as $serviceDefinition) {
-            $this->applyServiceDefinition($serviceDefinition);
+            $serviceDefinition->applyToBuilder($this);
         }
 
         if ($this->serviceAvailable) {
@@ -83,21 +82,6 @@ class ServiceBuilder
             }
             return new $class(...$arguments);
         }
-    }
-
-    private function applyServiceDefinition(mixed $serviceDefinition): self
-    {
-        if (is_callable($serviceDefinition)) {
-            $ret = $serviceDefinition($this) ?? $this;
-            if ($ret !== $this) {
-                $this->setService($ret);
-            }
-        } else if(is_array($serviceDefinition)) {
-            throw new NotImplementedException("Array service definitons are not yet supported.");
-        } else {
-            $this->setService($serviceDefinition);
-        }
-        return $this;
     }
 
     public function getServiceName(): string

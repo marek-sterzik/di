@@ -37,7 +37,14 @@ class DI
         if (!is_array($serviceDefinitions)) {
             throw new InvalidConfigurationException("Service definitons must be an array");
         }
-        $this->definitions = $serviceDefinitions;
+        $this->definitions = [];
+        foreach ($serviceDefinitions as $service => $definition) {
+            $serviceCanonized = $this->canonizeServiceName($service);
+            if (!isset($this->definitions[$serviceCanonized])) {
+                $this->definitions[$serviceCanonized] = new ServiceDefinition();
+            }
+            $this->definitions[$serviceCanonized]->addDefinition($definition);
+        }
     }
 
     public function has(string $serviceName): bool
@@ -54,6 +61,7 @@ class DI
 
     public function get(string $serviceName): mixed
     {
+        $serviceName = $this->canonizeServiceName($serviceName);
         if (!array_key_exists($serviceName, $this->services)) {
             $definitions = $this->buildServiceDefinitions($serviceName);
             if (isset($this->recursionProtection[$serviceName])) {
@@ -108,5 +116,16 @@ class DI
             }
         }
         return $definitions;
+    }
+
+    private function canonizeServiceName(string $serviceName): string
+    {
+        if (substr($serviceName, 0, 1) == '\\') {
+            $serviceName = substr($serviceName, 1);
+        }
+        if ($serviceName === '') {
+            $serviceName = '\\';
+        }
+        return $serviceName;
     }
 }
