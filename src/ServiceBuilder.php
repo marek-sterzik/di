@@ -3,6 +3,7 @@
 namespace Sterzik\DI;
 
 use ReflectionFunction;
+use ReflectionMethod;
 use ReflectionClass;
 
 use Sterzik\DI\Exception\InvalidConfigurationException;
@@ -42,9 +43,6 @@ class ServiceBuilder
             if ($this->factory !== null) {
                 throw new InvalidConfigurationException("Setting factory is not compatible with direct service setting.");
             }
-            if (!empty($this->postOperations)) {
-                throw new InvalidConfigurationException("Setting custom calls is not compatible with direct service setting.");
-            }
             return $this->service;
         }
 
@@ -53,7 +51,7 @@ class ServiceBuilder
             $reflectionFactory = new ReflectionFunction($factory);
             $arguments = ArgumentBuilder::buildArguments(
                 $reflectionFactory,
-                $di,
+                $this->di,
                 $this->constructorArguments,
                 $this->autowire
             );
@@ -102,6 +100,11 @@ class ServiceBuilder
         return $this;
     }
 
+    public function getServiceName(): string
+    {
+        return $this->serviceName;
+    }
+
     public function isPublic(): bool
     {
         return $this->public;
@@ -112,7 +115,31 @@ class ServiceBuilder
         if (empty($this->postOperations)) {
             return null;
         }
-        throw new NotImplementedException("Post operations are not yet supported");
+        $postOperations = $this->postOperations;
+        foreach ($postOperations as &$operation) {
+            if ($operation['autowire'] === null) {
+                $operation['autowire'] = $this->autowire;
+            }
+        }
+
+        return function ($service) use ($postOperations) {
+            if (!is_object($service)) {
+                throw new InvalidConfigurationException(
+                    sprintf("Trying to call methods on a non-object (service %s)", $this->getServiceName())
+                );
+            }
+
+            foreach ($postOperations as $postOperation) {
+                $method = new ReflectionMethod($service, $postOperation['method']);
+                $arguments = ArgumentBuilder::buildArguments(
+                    $method,
+                    $this->di,
+                    $postOperation['arguments'],
+                    $postOperation['autowire']
+                );
+                $method->invoke($service, ...$arguments);
+            }
+        };
     }
 
     public function has(string $serviceName): bool
@@ -157,6 +184,21 @@ class ServiceBuilder
         return $this->setArguments([$index => $value]);
     }
 
+    public function call(string $method, ...$arguments): self
+    {
+        return $this->callArgs($method, $arguments);
+    }
+
+    public function callArgs(string $method, array $arguments, ?bool $autowire = null): self
+    {
+        $this->postOperations[] = [
+            "method" => $method,
+            "arguments" => $arguments,
+            "autowire" => $autowire,
+        ];
+        return $this;
+    }
+
     public function setPublic(bool $public = true): self
     {
         $this->public = $public;
@@ -166,10 +208,12 @@ class ServiceBuilder
     public function setAutowire(bool $autowire = true): self
     {
         $this->autowire = $autowire;
+        return $this;
     }
 
     public function setRequireExplicitClass(bool $requireExplicitClass = true): self
     {
         $this->requireExplicitClass = $requireExplicitClass;
+        return $this;
     }
 }

@@ -70,4 +70,15 @@ class BasicDITest extends AbstractTestCase
         $test1 = $di->get("test");
         $this->assertInstanceof(Test1::class, $test1);
     }
+
+    public function testExplicitService(): void
+    {
+        $config = [
+            "explicit" => "explicitString",
+        ];
+
+        $di = $this->createDI($config);
+        $value = $di->get("explicit");
+        $this->assertSame("explicitString", $value);
+    }
 }

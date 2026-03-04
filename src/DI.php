@@ -68,15 +68,15 @@ class DI
                     $this->publicServices[$serviceName] = true;
                 }
                 if ($postOperation !== null) {
-                    $this->postOperations[] = $postOperation;
+                    $this->postOperations[] = [$postOperation, $service];
                 }
                 $this->services[$serviceName] = $service;
                 if (count($this->recursionProtection) <= 1) {
                     while (!empty($this->postOperations)) {
                         $postOperations = $this->postOperations;
                         $this->postOperations = [];
-                        foreach ($postOperations as $postOperation) {
-                            $postOperation();
+                        foreach ($postOperations as list($postOperation, $service)) {
+                            $postOperation($service);
                         }
                     }
                 }
@@ -85,11 +85,6 @@ class DI
             }
         }
         if (empty($this->recursionProtection)) {
-            $postOperations = $this->postOperations;
-            $this->postOperations = [];
-            foreach ($postOperations as $postOperation) {
-                $postOperation();
-            }
             if (!($this->publicServices[$serviceName] ?? false)) {
                 throw new PrivateServiceException(sprintf("Cannot access private service %s", $serviceName));
             }

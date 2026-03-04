@@ -17,5 +17,10 @@ class Test2
     {
         return $this->test1->value();
     }
+
+    public function getTest1(): Test1
+    {
+        return $this->test1;
+    }
 }
 

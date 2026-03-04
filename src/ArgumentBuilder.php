@@ -14,14 +14,11 @@ use Sterzik\DI\Exception\InvalidConfigurationException;
 class ArgumentBuilder
 {
     public static function buildArguments(
-        ?ReflectionFunctionAbstract $function,
+        ReflectionFunctionAbstract $function,
         DI $di,
         array $customArgs,
         bool $autowire
     ): array {
-        if ($function === null) {
-            return [];
-        }
         $functionName = self::getReflectionName($function);
         $arguments = [];
         foreach ($function->getParameters() as $index => $parameter) {
@@ -38,7 +35,7 @@ class ArgumentBuilder
                     $arguments[] = self::findArgumentByType($type, $di, $parameter, $name, $functionName);
                 } else {
                     throw new InvalidConfigurationException(
-                        sprintf("Cannot find service for argument %i of %s", $index, $functionName)
+                        sprintf("Cannot find service for argument %s of %s", $index, $functionName)
                     );
                 }
             }
