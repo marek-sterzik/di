@@ -13,6 +13,7 @@ use Sterzik\DI\Exception\NotImplementedException;
 use Tests\DIServices\Circular1;
 use Tests\DIServices\Test1;
 use Tests\DIServices\Test2;
+use Tests\DIServices\TestValues;
 
 class ErrorStateDITest extends AbstractTestCase
 {
@@ -120,5 +121,33 @@ class ErrorStateDITest extends AbstractTestCase
         $di = $this->createDI($config);
         $this->expectException(NotImplementedException::class);
         $di->get("explicit");
+    }
+
+    public function testArgumentBadAutowiring1(): void
+    {
+        $config = [
+            TestValues::class => fn($builder) => $builder
+                ->setArguments(["c"])
+                ->call("addAllValues", arg: "A")
+        ];
+
+        $di = $this->createDI($config);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $di->get(TestValues::class);
+    }
+
+    public function testArgumentBadAutowiring2(): void
+    {
+        $config = [
+            TestValues::class => fn($builder) => $builder
+                ->setArguments(["c"])
+                ->call("addValueVariadic", "z", "z1", values: "z2")
+        ];
+
+        $di = $this->createDI($config);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $di->get(TestValues::class);
     }
 }
