@@ -12,6 +12,8 @@ use ReflectionNamedType;
 use Sterzik\DI\Exception\CircularReferenceException;
 use Sterzik\DI\Exception\PrivateServiceException;
 use Sterzik\DI\Exception\MissingConfigurationException;
+use Sterzik\DI\Exception\MissingParameterException;
+use Sterzik\DI\Exception\ParametersImmutableException;
 use Sterzik\DI\Exception\InvalidConfigurationException;
 use Sterzik\DI\Exception\ServiceDoesNotExistException;
 
@@ -28,6 +30,8 @@ final class DI
     private array $recursionProtection = [];
     private array $postOperations = [];
     private array $publicServices = [];
+    private array $parameters = [];
+    private bool $parametersFinal = false;
 
     public static function setServiceDefinitions(string|array $serviceDefinitions): void
     {
@@ -59,7 +63,7 @@ final class DI
         return self::$instance;
     }
 
-    public function __construct(string|array $serviceDefinitions)
+    public function __construct(string|array $serviceDefinitions, array $parameters = [])
     {
         if (is_string($serviceDefinitions)) {
             $serviceDefinitions = Path::resolve($serviceDefinitions);
@@ -82,6 +86,38 @@ final class DI
             }
             $this->definitions[$serviceCanonized]->addDefinition($definition);
         }
+
+        $this->parameters = $parameters;
+    }
+
+    public function setParameter(string $parameter, mixed $value): self
+    {
+        return $this->setParameters([$parameter => $value]);
+    }
+
+    public function setParameters(array $parameters): self
+    {
+        if ($this->parametersFinal) {
+            throw new ParametersImmutableException(
+                "Cannot modify DI parameters, they become immutable after getting the fist service from DI"
+            );
+        }
+        $this->parameters = array_merge($this->parameters, $parameters);
+        return $this;
+    }
+
+    public function freezeParameters(): self
+    {
+        $this->parametersFinal = true;
+        return $this;
+    }
+
+    public function parameter(string $parameter): mixed
+    {
+        if (!array_key_exists($parameter, $this->parameters)) {
+            throw new MissingParameterException(sprintf("Missing parameter %s in DI container", $parameter));
+        }
+        return $this->parameters[$parameter];
     }
 
     public function has(string $serviceName): bool
@@ -98,6 +134,7 @@ final class DI
 
     public function get(string $serviceName): mixed
     {
+        $this->parametersFinal = true;
         $serviceName = $this->canonizeServiceName($serviceName);
         if (!array_key_exists($serviceName, $this->services)) {
             $definitions = $this->buildServiceDefinitions($serviceName);

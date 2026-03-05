@@ -129,6 +129,21 @@ class ServiceBuilder
         return $this->di->get($serviceName);
     }
 
+    public function parameter(string $parameter): mixed
+    {
+        return $this->di->parameter($parameter);
+    }
+
+    public function getAppRoot(): string
+    {
+        return Path::getRoot();
+    }
+
+    public function resolvePath(string $path): string
+    {
+        return Path::resolve($path);
+    }
+
     public function setExists(bool $exists = true): self
     {
         $this->exists = $exists;
