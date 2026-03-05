@@ -153,9 +153,17 @@ Examples:
 use Sterzik\DI\DI;
 
 $config = [
-    "service1" => fn($builder) => $builder->setClass(MyService1Class::class), // callable
-    "service2" => ["some" => "configuration"],                                // array
-    "service3" => new StaticServiceClass(),                                   // static service resolving
+    // callable
+    "service1" => fn($builder) =>
+        $builder->setClass(MyService1Class::class),
+
+    // array - reserved for future development
+    "service2" => [
+        "some" => "configuration"
+    ],
+
+    // static service resolving
+    "service3" => new StaticServiceClass(),
 ];
 
 $di = new DI($config);
@@ -163,10 +171,12 @@ $di = new DI($config);
 // lead to: new MyService1Class()
 $service1 = $di->get("service1");
 
-// not yet implemented, leads to Sterzik\DI\Exception\NotImplementedException exception
+// not yet implemented
+// leads to Sterzik\DI\Exception\NotImplementedException exception
 $service2 = $di->get("service2");
 
-// leads to the static instance of StaticServiceInstance class passed to the configuration
+// leads to the static instance of StaticServiceInstance class
+// passed to the configuration
 $service3 = $di->get("service3");
 ```
 
@@ -174,9 +184,20 @@ $service3 = $di->get("service3");
 use Sterzik\DI\DI;
 
 $config = [
-    "service1" => function ($builder) { return $builder->setClass(MyService1Class::class); }, // returns builder
-    "service2" => function ($builder) { $builder->setClass(MyService2Class::class); },        // returns null
-    "service3" => function ($builder) { return new StaticServiceClass(); },                   // returns anything else
+    // function returns builder:
+    "service1" => function ($builder) {
+        return $builder->setClass(MyService1Class::class);
+    },
+
+    // function returns null (none)
+    "service2" => function ($builder) {
+        $builder->setClass(MyService2Class::class);
+    },
+
+    // function returns anything else
+    "service3" => function ($builder) {
+        return new StaticServiceClass();
+    },
 ];
 
 $di = new DI($config);
@@ -187,7 +208,8 @@ $service1 = $di->get("service1");
 // lead to: new MyService2Class() (same as in the case of service1)
 $service2 = $di->get("service2");
 
-// leads to the static instance of StaticServiceInstance class created in the callable service definition of service3
+// leads to the static instance of StaticServiceInstance class
+// created in the callable service definition of service3
 $service3 = $di->get("service3");
 ```
 
@@ -204,7 +226,9 @@ Example `services.php`:
 
 ```php
 return [
-    "service" => function ($builder) { return $builder->setClass(MyServiceClass::class); },
+    "service" => function ($builder) {
+        return $builder->setClass(MyServiceClass::class);
+    },
 ];
 ```
 
@@ -215,8 +239,9 @@ Sets one constructor argument. Argument may be specified either as an integer (p
 Example `services.php`:
 ```php
 return [
-    MyServiceClass::class => fn($builder) =>
-        $builder->setArgument(0, "FirstArgument")->setArgument("argument2", "SecondArgument"),
+    MyServiceClass::class => fn($builder) => $builder
+        ->setArgument(0, "FirstArgument")
+        ->setArgument("argument2", "SecondArgument"),
 ];
 ```
 
@@ -227,8 +252,8 @@ Set multiple constructor arguments given in the variadic argument `$arguments`.
 Example `services.php`:
 ```php
 return [
-    MyServiceClass::class => fn($builder) =>
-        $builder->setArguments("FirstArgument",argument2: "SecondArgument"),
+    MyServiceClass::class => fn($builder) => $builder
+        ->setArguments("FirstArgument",argument2: "SecondArgument"),
 ];
 ```
 
@@ -239,8 +264,8 @@ Set multiple constructor arguments given in the array `$arguments`. If `$resetAr
 Example `services.php`:
 ```php
 return [
-    MyServiceClass::class => fn($builder) =>
-        $builder->putArguments([0 => "FirstArgument", "argument2" => "SecondArgument"], true),
+    MyServiceClass::class => fn($builder) => $builder
+        ->putArguments([0 => "FirstArgument", "argument2" => "SecondArgument"], true),
 ];
 ```
 
@@ -251,11 +276,11 @@ Reset all previously set arguments. Equivalent to call `$builder->putArguments([
 Example `services.php`:
 ```php
 return [
-    '\\' => fn($builder) =>
-        $builder->setArgument("url" => $url),
+    '\\' => fn($builder) => $builder
+        ->setArgument("url" => $url),
 
-    MyServiceClass::class => fn($builder) =>
-        $builder->resetArguments(),
+    MyServiceClass::class => fn($builder) => $builder
+        ->resetArguments(),
 ];
 ```
 
@@ -270,8 +295,9 @@ $factory = function (string $argument) {
 }
 
 return [
-    MyServiceClass::class => fn($builder) =>
-        $builder->setFactory($factory)->setArgument("argument", "someValue"),
+    MyServiceClass::class => fn($builder) => $builder
+        ->setFactory($factory)
+        ->setArgument("argument", "someValue"),
 ];
 ```
 
@@ -284,7 +310,8 @@ Example `services.php`:
 ```php
 // globally disable autowiring
 return [
-    '\\' => fn($builder) => $builder->setAutowire(false),
+    '\\' => fn($builder) => $builder
+        ->setAutowire(false),
     ...
 ];
 
@@ -299,8 +326,9 @@ Example `services.php`:
 ```php
 // globally require explicit class
 return [
-    '\\' => fn($builder) =>
-        $builder->setRequireExplicitClass(true),
+    '\\' => fn($builder) => $builder
+        ->setRequireExplicitClass(true),
+
     ...
 ];
 
@@ -315,10 +343,11 @@ Example `services.php`:
 ```php
 // set all services as public except service of id SomePublicServiceClass::class
 return [
-    '\\' => fn($builder) =>
-        $builder->setPublic(false),
-    SomePublicServiceClass::class => fn($builder) =>
-        $builder->setPublic(true),
+    '\\' => fn($builder) => $builder
+        ->setPublic(false),
+
+    SomePublicServiceClass::class => fn($builder) => $builder
+        ->setPublic(true),
 ];
 
 ```
@@ -331,8 +360,8 @@ Example `services.php`:
 ```php
 // after creation of MyServiceClass instance, the method setupUrl($url) will be called.
 return [
-    MyServiceClass::class => fn($builder) =>
-        $builder->call("setupUrl", $url),
+    MyServiceClass::class => fn($builder) => $builder
+        ->call("setupUrl", $url),
 ];
 ```
 
@@ -349,8 +378,8 @@ Example `services.php`:
 ```php
 // after creation of MyServiceClass instance, the method setupUrl($url) will be called.
 return [
-    MyServiceClass::class => fn($builder) =>
-        $builder->callArgs("setupUrl", [$url], false),
+    MyServiceClass::class => fn($builder) => $builder
+        ->callArgs("setupUrl", [$url], false),
 ];
 ```
 
@@ -377,11 +406,12 @@ Example `services.php`:
 ```php
 // service "subservice" will be wired to the constructor argument $subService of class SomeClass
 return [
-    "service" => fn($builder) =>
-        $builder->setClass(SomeClass::class)->setArgument("subService", $builder->get("subservice")),
+    "service" => fn($builder) => $builder
+        ->setClass(SomeClass::class)
+        ->setArgument("subService", $builder->get("subservice")),
 
-    "subservice" => fn($builder) =>
-        $builder->setClass(SubserviceClass::class),
+    "subservice" => fn($builder) => $builder
+        ->setClass(SubserviceClass::class),
 ];
 ```
 
