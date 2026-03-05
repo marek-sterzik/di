@@ -208,10 +208,45 @@ $service1 = $di->get("service1");
 // lead to: new MyService2Class() (same as in the case of service1)
 $service2 = $di->get("service2");
 
-// leads to the static instance of StaticServiceInstance class
+// leads to the static instance of StaticServiceI stance class
 // created in the callable service definition of service3
 $service3 = $di->get("service3");
 ```
+
+## Container parameters
+
+DI container may be parametrized by a bundle of parameters. Each parameter has a string name and may have an arbitrary value.
+
+There are two ways how container parameters may be passed to the DI container:
+
+1. Pass the parameters as an array of named parameters as the second argument of the constructor (not available for the global DI instance)
+2. By calling the methods `$di->setParameter()` or `$di->setParameters()`. These methods **must** be called before the first service is obtained from the container.
+
+Examples:
+
+```php
+use Sterzik\DI\DI;
+
+$config = ...;
+$parameters = ...;
+
+// $di has already preconfigured all parameters from the $parameters array
+$di = new DI($config, $parameters);
+
+// and these parameters may be changed even after instantiation of the container:
+$di->setParameter("remoteUrl", "http://example.com");
+$di->setParameters(["remoteUrl" => "https://example.com", "cacheFile" => "cache-file.dat"]);
+
+$di->get(SomeService::class);
+
+// now calling $di->setParameter() and $di->setParameters() throws an exception
+
+```
+
+There is also a method `$di->freezeParameters()` which freezes the parameters and makes
+all parameters immutable, like `$di->get()` or `$id->has()` do.
+
+Accessing any parameter may be done by the method `$di->parameter($parameterName)`.
 
 ## The builder
 
@@ -418,3 +453,49 @@ return [
 ### $builder->has($serviceName)
 
 Test if the service of the given service name does exist in the DI container.
+
+### $builder->parameter($parameter)
+
+Return the container parameter named `$parameter`.
+
+Example `services.php`:
+```php
+// set the constructor first argument of service Service
+// to the DI container parameter "url"
+return [
+    Service::class => fn($builder) => $builder
+        ->setArguments($builder->parameter("url")),
+];
+```
+
+### $builder->getAppRoot()
+
+Return the application root directory (directory with composer.json).
+
+Example `services.php`:
+```php
+// set the constructor argument $applicationRoot
+// to the application root directory path
+return [
+    Service::class => fn($builder) => $builder
+        ->setArgument("applicationRoot", $builder->getAppRoot()),
+];
+```
+
+
+### $builder->resolvePath($path)
+
+Return the path `$path` resolved relatively to the application root. I.e. if `$path` 
+is an absolute path, keep it as it is, if it is an relative path, it will be converted
+to an absolute path where application root is the base directory to calculate relative path to.
+
+Example `services.php`:
+```php
+// set the constructor first argument of service Service
+// to the absolute path of the file "config/config-file.conf" 
+// interpreted relatively to the application root
+return [
+    Service::class => fn($builder) => $builder
+        ->setArgument("configFile", $builder->resolvePath("config/config-file.conf")),
+];
+```
