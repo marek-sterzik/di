@@ -11,13 +11,14 @@ use Sterzik\DI\Exception\ServiceDoesNotExistException;
 
 class ServiceBuilder
 {
-    private $constructorArguments = [];
+    private array $constructorArguments = [];
     private ?string $class = null;
     private mixed $factory = null;
     private array $postOperations = [];
     private bool $public = true;
     private bool $autowire = true;
     private bool $requireExplicitClass = false;
+    private bool $exists = true;
 
     private mixed $service = null;
     private bool $serviceAvailable = false;
@@ -32,16 +33,11 @@ class ServiceBuilder
             $serviceDefinition->applyToBuilder($this);
         }
 
+        if (!$this->exists) {
+            throw new ServiceDoesNotExistException(sprintf("Service %s does not exist", $this->serviceName));
+        }
+
         if ($this->serviceAvailable) {
-            if (!empty($this->constructorArguments)) {
-                throw new InvalidConfigurationException("Using constructor arguments is not compatible with direct service setting.");
-            }
-            if ($this->class !== null) {
-                throw new InvalidConfigurationException("Setting class is not compatible with direct service setting.");
-            }
-            if ($this->factory !== null) {
-                throw new InvalidConfigurationException("Setting factory is not compatible with direct service setting.");
-            }
             return $this->service;
         }
 
@@ -55,9 +51,6 @@ class ServiceBuilder
                 $this->autowire
             );
             $service = $factory(...$arguments);
-            if ($this->class !== null && !is_a($service, $this->class)) {
-                throw new InvalidConfigurationException(sprintf("Service %s is not of class %s.", $this->serviceName, $this->class));
-            }
             return $service;
         } else {
             if ($this->requireExplicitClass && $this->class === null) {
@@ -136,27 +129,70 @@ class ServiceBuilder
         return $this->di->get($serviceName);
     }
 
+    public function setExists(bool $exists = true): self
+    {
+        $this->exists = $exists;
+        if (!$this->exists) {
+            $this->class = null;
+            $this->factory = null;
+            $this->constructorArguments = [];
+            $this->postOperations = [];
+            $this->service = null;
+            $this->serviceAvailable = false;
+        }
+        return $this;
+    }
+
     public function setService(mixed $service): self
     {
         $this->service = $service;
         $this->serviceAvailable = true;
+        $this->class = null;
+        $this->factory = null;
+        $this->constructorArguments = [];
+        $this->exists = true;
         return $this;
     }
 
     public function setClass(string $class): self
     {
         $this->class = $class;
+        $this->factory = null;
+        $this->service = null;
+        $this->serviceAvailable = false;
+        $this->exists = true;
         return $this;
     }
 
     public function setFactory(callable $factory): self
     {
         $this->factory = $factory;
+        $this->class = null;
+        $this->service = null;
+        $this->serviceAvailable = false;
+        $this->exists = true;
         return $this;
     }
 
-    public function setArguments(array $arguments): self
+    public function resetArguments(): self
     {
+        return $this->putArguments([], true);
+    }
+
+    public function setArguments(...$arguments): self
+    {
+        return $this->putArguments($arguments, false);
+    }
+
+    public function putArguments(array $arguments, bool $resetArguments = false): self
+    {
+        $this->service = null;
+        $this->serviceAvailable = false;
+        $this->exists = true;
+
+        if ($resetArguments) {
+            $this->constructorArguments = [];
+        }
         foreach ($arguments as $index => $value) {
             $this->constructorArguments[$index] = $value;
         }
@@ -165,16 +201,18 @@ class ServiceBuilder
 
     public function setArgument(string|int $index, mixed $value): self
     {
-        return $this->setArguments([$index => $value]);
+        return $this->putArguments([$index => $value], false);
     }
 
     public function call(string $method, ...$arguments): self
     {
-        return $this->callArgs($method, $arguments);
+        return $this->callArguments($method, $arguments);
     }
 
-    public function callArgs(string $method, array $arguments, ?bool $autowire = null): self
+    public function callArguments(string $method, array $arguments, ?bool $autowire = null): self
     {
+        $this->exists = true;
+
         $this->postOperations[] = [
             "method" => $method,
             "arguments" => $arguments,
@@ -185,18 +223,21 @@ class ServiceBuilder
 
     public function setPublic(bool $public = true): self
     {
+        $this->exists = true;
         $this->public = $public;
         return $this;
     }
 
     public function setAutowire(bool $autowire = true): self
     {
+        $this->exists = true;
         $this->autowire = $autowire;
         return $this;
     }
 
     public function setRequireExplicitClass(bool $requireExplicitClass = true): self
     {
+        $this->exists = true;
         $this->requireExplicitClass = $requireExplicitClass;
         return $this;
     }

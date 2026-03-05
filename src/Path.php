@@ -15,7 +15,7 @@ class Path
         return $rootDir . static::separator() . $path;
     }
 
-    final private static function isAbsolute(string $path): bool
+    final public static function isAbsolute(string $path): bool
     {
         if (substr($path, 0, 1) === static::separator()) {
             return true;

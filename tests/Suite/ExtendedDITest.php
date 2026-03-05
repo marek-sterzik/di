@@ -94,11 +94,11 @@ class ExtendedDITest extends AbstractTestCase
 
         $config1 = [
             "\\" => fn($builder) => $builder->setFactory($factory),
-            "test1" => fn($builder) => $builder->setArguments(["test1"]),
-            "test2" => fn($builder) => $builder->setArguments(["test2"]),
+            "test1" => fn($builder) => $builder->putArguments(["test1"]),
+            "test2" => fn($builder) => $builder->setArguments("test2"),
         ];
         $config2 = [
-            "\\" => fn($builder) => $builder->setFactory($factory)->setArguments([$builder->getServiceName()]),
+            "\\" => fn($builder) => $builder->setFactory($factory)->setArguments($builder->getServiceName()),
         ];
 
         foreach ([$config1, $config2] as $config) {
@@ -171,7 +171,7 @@ class ExtendedDITest extends AbstractTestCase
     public function testCall(): void
     {
         $config = [
-            TestValues::class => fn($builder) => $builder->setArguments(["test"])->call("addValue", "v1")->call("addValue", "v2"),
+            TestValues::class => fn($builder) => $builder->setArguments("test")->call("addValue", "v1")->call("addValue", "v2"),
         ];
 
         $di = $this->createDI($config);
@@ -205,7 +205,7 @@ class ExtendedDITest extends AbstractTestCase
     {
         $config = [
             TestValues::class => fn($builder) => $builder
-                ->setArguments(["c"])
+                ->setArguments("c")
                 ->call("addValue", "v1")
                 ->call("addValueImplicit", "v2")
                 ->call("addValueImplicit")
@@ -222,6 +222,32 @@ class ExtendedDITest extends AbstractTestCase
         $testValues = $di->get(TestValues::class);
         $this->assertInstanceof(TestValues::class, $testValues);
         $this->assertSame("c,v1,v2,value,string,v3,null,x,y,y1,y2,z,z1,A,B,C", $testValues->getValuesString());
+    }
+
+    public function testExists(): void
+    {
+        $config = [
+            Test2::class => fn($builder) => $builder->setExists(false),
+        ];
+
+        $di = $this->createDI($config);
+
+        $test1 = $di->get(Test1::class);
+        $this->assertInstanceof(Test1::class, $test1);
+        $this->assertFalse($di->has(Test2::class));
+    }
+
+    public function testResetArguments(): void
+    {
+        $config = [
+            "test1" => fn($builder) => $builder->setClass(TestValues::class)->setArguments("a", "b", "c")->resetArguments()->setArguments("d"),
+        ];
+
+        $di = $this->createDI($config);
+
+        $test1 = $di->get("test1");
+
+        $this->assertSame("d", $test1->getValuesString());
     }
 }
 
