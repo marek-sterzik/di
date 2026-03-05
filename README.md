@@ -147,3 +147,245 @@ When the service definition is a callable, this holds for the return value:
 * if the return value is `null`, it is the same as if the builder would be returned.
 * if any other value is returned, it will become the service
 
+Examples:
+
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    "service1" => fn($builder) => $builder->setClass(MyService1Class::class), // callable
+    "service2" => ["some" => "configuration"],                                // array
+    "service3" => new StaticServiceClass(),                                   // static service resolving
+];
+
+$di = new DI($config);
+
+// lead to: new MyService1Class()
+$service1 = $di->get("service1");
+
+// not yet implemented, leads to Sterzik\DI\Exception\NotImplementedException exception
+$service2 = $di->get("service2");
+
+// leads to the static instance of StaticServiceInstance class passed to the configuration
+$service3 = $di->get("service3");
+```
+
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    "service1" => function ($builder) { return $builder->setClass(MyService1Class::class); }, // returns builder
+    "service2" => function ($builder) { $builder->setClass(MyService2Class::class); },        // returns null
+    "service3" => function ($builder) { return new StaticServiceClass(); },                   // returns anything else
+];
+
+$di = new DI($config);
+
+// lead to: new MyService1Class()
+$service1 = $di->get("service1");
+
+// lead to: new MyService2Class() (same as in the case of service1)
+$service2 = $di->get("service2");
+
+// leads to the static instance of StaticServiceInstance class created in the callable service definition of service3
+$service3 = $di->get("service3");
+```
+
+## The builder
+
+The builder passed to the callable service definition contains many methods which may control the build process of the service. All setters return the builder itself
+and therefore setters may be chained.
+
+### setClass($class)
+
+Sets the class of the built object.
+
+Example:
+
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    "service" => function ($builder) { return $builder->setClass(MyServiceClass::class); },
+];
+
+$di = new DI($config);
+
+$service = $di->get("service");
+```
+
+### setArgument($argument, $value)
+
+Sets one constructor argument. Argument may be specified either as an integer (position index) or a string (argument name).
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    MyServiceClass::class => fn($builder) => $builder->setArgument(0, "FirstArgument")->setArgument("argument2", "SecondArgument"),
+];
+
+$di = new DI($config);
+
+$service = $di->get("service");
+```
+
+### setArguments($arguments)
+
+Set multiple constructor arguments given in the array `$arguments`.
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    MyServiceClass::class => fn($builder) => $builder->setArguments([0 => "FirstArgument", "argument2" => "SecondArgument"]),
+];
+
+$di = new DI($config);
+
+$service = $di->get("service");
+```
+
+
+### setFactory($factory)
+
+Use the callable `$factory` instead of calling the constructor. Arguments set by `setArgument()` or `setArguments()` are passed to the factory callable if set.
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+$factory = function (string $argument) {
+    return new Service($argument);
+}
+
+$config = [
+    MyServiceClass::class => fn($builder) => $builder->setFactory($factory)->setArgument("argument", "someValue"),
+];
+
+$di = new DI($config);
+
+$service = $di->get("service");
+```
+
+### setAutowire($autowire)
+
+Enable or disable the autowiring functionality. If autowire is enabled (default state) arguments of the constructor or the factory not explicitely defined will be autowired
+to services using the defined type of the argument.
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+// globally disable autowiring
+$config = [
+    '\\' => fn($builder) => $builder->setAutowire(false),
+];
+
+```
+
+### setRequireExplicitClass($requireExplicitClass)
+
+Enable or disable the automatic class resolving. By default, if the class is not specified, the service name is used as the class. If this function is enabled,
+classes must be explicitely specified for each service.
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+// globally require explicit class
+$config = [
+    '\\' => fn($builder) => $builder->setRequireExplicitClass(true),
+];
+
+```
+
+### call($method, ...$arguments)
+
+Call a method `$method` of the service after creation. The service **must** be an object if you want to use this feature.
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    MyServiceClass::class => fn($builder) => $builder->call("setupUrl", $url),
+];
+
+$di = new DI($config);
+
+// after creation of MyServiceClass instance, the method setupUrl($url) will be called.
+$service = $di->get("service");
+```
+
+### callArgs($method, $arguments, $autowire = null)
+
+Same as `call()` but arguments are passed as a single argument instead of using a variadic argument. The `$autowire` argument
+specifies, if autowiring may be used for resolving method arguments. Possible values:
+
+* `true` - do use autowiring in this method
+* `false` - dont use autowiring in this method
+* `null` - use the autowire setting valid for the constructor
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    MyServiceClass::class => fn($builder) => $builder->callArgs("setupUrl", [$url], false),
+];
+
+$di = new DI($config);
+
+// after creation of MyServiceClass instance, the method setupUrl($url) will be called.
+$service = $di->get("service");
+```
+
+### setService($service)
+
+Explicitely set the service. It has the same effect as returning the service in the service definition callback.
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+$service = new Service();
+
+$config = [
+    "service1" => fn($builder) => $service,
+    "service2" => fn($builder) => $builder->setService($service),
+];
+
+$di = new DI($config);
+
+$service1 = $di->get("service1");
+$service2 = $di->get("service2");
+
+// both, $service1 and $service2 both resolve to the same instance of $service
+```
+
+### get($serviceName)
+
+get the service of the given service name from the DI container.
+
+Example: 
+```php
+use Sterzik\DI\DI;
+
+$config = [
+    "service" => fn($builder) => $builder->setClass(SomeClass::class)->setArgument("subService", $builder->get("subservice")),
+    "subservice" => fn($builder) => $builder->setClass(SubserviceClass::class),
+];
+
+$di = new DI($config);
+
+// service "subservice" will be wired to the constructor argument $subService of class SomeClass
+$service = $di->get("service");
+
+```
+
+### has($serviceName)
+
+Test if the service of the given service name does exist in the DI container.
