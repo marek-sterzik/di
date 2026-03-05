@@ -200,115 +200,79 @@ and therefore setters may be chained.
 
 Sets the class of the built object (constructed by a regular constructor).
 
-Example:
+Example `services.php`:
 
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+return [
     "service" => function ($builder) { return $builder->setClass(MyServiceClass::class); },
 ];
-
-$di = new DI($config);
-
-$service = $di->get("service");
 ```
 
 ### setArgument($argument, $value)
 
 Sets one constructor argument. Argument may be specified either as an integer (position index) or a string (argument name).
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+return [
     MyServiceClass::class => fn($builder) =>
         $builder->setArgument(0, "FirstArgument")->setArgument("argument2", "SecondArgument"),
 ];
-
-$di = new DI($config);
-
-$service = $di->get("service");
 ```
 
 ### setArguments(...$arguments)
 
 Set multiple constructor arguments given in the variadic argument `$arguments`.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+return [
     MyServiceClass::class => fn($builder) =>
         $builder->setArguments("FirstArgument",argument2: "SecondArgument"),
 ];
-
-$di = new DI($config);
-
-$service = $di->get("service");
 ```
 
 ### putArguments($arguments, $resetArguments = false)
 
 Set multiple constructor arguments given in the array `$arguments`. If `$resetArguments` is true, then all previously set arguments will be reset.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+return [
     MyServiceClass::class => fn($builder) =>
         $builder->putArguments([0 => "FirstArgument", "argument2" => "SecondArgument"], true),
 ];
-
-$di = new DI($config);
-
-$service = $di->get("service");
 ```
 
 ### resetArguments()
 
 Reset all previously set arguments. Equivalent to call `$builder->putArguments([], true)`.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+return [
     '\\' => fn($builder) =>
         $builder->setArgument("url" => $url),
 
     MyServiceClass::class => fn($builder) =>
         $builder->resetArguments(),
 ];
-
-$di = new DI($config);
-
-$service = $di->get("service");
 ```
 
 ### setFactory($factory)
 
 Use the callable `$factory` instead of calling the constructor. Arguments set by `setArgument()`, `setArguments()` or `putArguments()` are passed to the factory callable if set.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
 $factory = function (string $argument) {
     return new Service($argument);
 }
 
-$config = [
+return [
     MyServiceClass::class => fn($builder) =>
         $builder->setFactory($factory)->setArgument("argument", "someValue"),
 ];
-
-$di = new DI($config);
-
-$service = $di->get("service");
 ```
 
 ### setAutowire($autowire = true)
@@ -316,13 +280,12 @@ $service = $di->get("service");
 Enable or disable the autowiring functionality. If autowire is enabled (default state) arguments of the constructor or the factory not explicitely defined will be autowired
 to services using the defined type of the argument.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
 // globally disable autowiring
-$config = [
+return [
     '\\' => fn($builder) => $builder->setAutowire(false),
+    ...
 ];
 
 ```
@@ -332,14 +295,13 @@ $config = [
 Enable or disable the automatic class resolving. By default, if the class is not specified, the service name is used as the class. If this function is enabled,
 classes must be explicitely specified for each service.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
 // globally require explicit class
-$config = [
+return [
     '\\' => fn($builder) =>
         $builder->setRequireExplicitClass(true),
+    ...
 ];
 
 ```
@@ -349,12 +311,10 @@ $config = [
 Set the service as public (default) or private (`$public = false`). If the service is set to be private, then it cannot be instantiated outside of the DI container.
 It may be instantiated only as a dependency of other public classes.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
 // set all services as public except service of id SomePublicServiceClass::class
-$config = [
+return [
     '\\' => fn($builder) =>
         $builder->setPublic(false),
     SomePublicServiceClass::class => fn($builder) =>
@@ -367,19 +327,13 @@ $config = [
 
 Call a method `$method` of the service after creation. The service **must** be an object if you want to use this feature.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+// after creation of MyServiceClass instance, the method setupUrl($url) will be called.
+return [
     MyServiceClass::class => fn($builder) =>
         $builder->call("setupUrl", $url),
 ];
-
-$di = new DI($config);
-
-// after creation of MyServiceClass instance, the method setupUrl($url) will be called.
-$service = $di->get("service");
 ```
 
 ### callArguments($method, $arguments, $autowire = null)
@@ -391,65 +345,44 @@ specifies, if autowiring may be used for resolving method arguments. Possible va
 * `false` - dont use autowiring in this method
 * `null` - use the autowire setting valid for the constructor
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+// after creation of MyServiceClass instance, the method setupUrl($url) will be called.
+return [
     MyServiceClass::class => fn($builder) =>
         $builder->callArgs("setupUrl", [$url], false),
 ];
-
-$di = new DI($config);
-
-// after creation of MyServiceClass instance, the method setupUrl($url) will be called.
-$service = $di->get("service");
 ```
 
 ### setService($service)
 
 Explicitely set the service. It has the same effect as returning the service in the service definition callback.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
 $service = new Service();
 
-$config = [
+// both services resolve to the same object instance
+return [
     "service1" => fn($builder) => $service,
     "service2" => fn($builder) => $builder->setService($service),
 ];
-
-$di = new DI($config);
-
-$service1 = $di->get("service1");
-$service2 = $di->get("service2");
-
-// both, $service1 and $service2 both resolve to the same instance of $service
 ```
 
 ### get($serviceName)
 
 get the service of the given service name from the DI container.
 
-Example: 
+Example `services.php`:
 ```php
-use Sterzik\DI\DI;
-
-$config = [
+// service "subservice" will be wired to the constructor argument $subService of class SomeClass
+return [
     "service" => fn($builder) =>
         $builder->setClass(SomeClass::class)->setArgument("subService", $builder->get("subservice")),
 
     "subservice" => fn($builder) =>
         $builder->setClass(SubserviceClass::class),
 ];
-
-$di = new DI($config);
-
-// service "subservice" will be wired to the constructor argument $subService of class SomeClass
-$service = $di->get("service");
-
 ```
 
 ### has($serviceName)
