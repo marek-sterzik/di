@@ -196,7 +196,7 @@ $service3 = $di->get("service3");
 The builder passed to the callable service definition contains many methods which may control the build process of the service. All setters return the builder itself
 and therefore setters may be chained.
 
-### setClass($class)
+### $builder->setClass($class)
 
 Sets the class of the built object (constructed by a regular constructor).
 
@@ -208,7 +208,7 @@ return [
 ];
 ```
 
-### setArgument($argument, $value)
+### $builder->setArgument($argument, $value)
 
 Sets one constructor argument. Argument may be specified either as an integer (position index) or a string (argument name).
 
@@ -220,7 +220,7 @@ return [
 ];
 ```
 
-### setArguments(...$arguments)
+### $builder->setArguments(...$arguments)
 
 Set multiple constructor arguments given in the variadic argument `$arguments`.
 
@@ -232,7 +232,7 @@ return [
 ];
 ```
 
-### putArguments($arguments, $resetArguments = false)
+### $builder->putArguments($arguments, $resetArguments = false)
 
 Set multiple constructor arguments given in the array `$arguments`. If `$resetArguments` is true, then all previously set arguments will be reset.
 
@@ -244,7 +244,7 @@ return [
 ];
 ```
 
-### resetArguments()
+### $builder->resetArguments()
 
 Reset all previously set arguments. Equivalent to call `$builder->putArguments([], true)`.
 
@@ -259,7 +259,7 @@ return [
 ];
 ```
 
-### setFactory($factory)
+### $builder->setFactory($factory)
 
 Use the callable `$factory` instead of calling the constructor. Arguments set by `setArgument()`, `setArguments()` or `putArguments()` are passed to the factory callable if set.
 
@@ -275,7 +275,7 @@ return [
 ];
 ```
 
-### setAutowire($autowire = true)
+### $builder->setAutowire($autowire = true)
 
 Enable or disable the autowiring functionality. If autowire is enabled (default state) arguments of the constructor or the factory not explicitely defined will be autowired
 to services using the defined type of the argument.
@@ -290,7 +290,7 @@ return [
 
 ```
 
-### setRequireExplicitClass($requireExplicitClass = true)
+### $builder->setRequireExplicitClass($requireExplicitClass = true)
 
 Enable or disable the automatic class resolving. By default, if the class is not specified, the service name is used as the class. If this function is enabled,
 classes must be explicitely specified for each service.
@@ -306,7 +306,7 @@ return [
 
 ```
 
-### setPublic($public = true)
+### $builder->setPublic($public = true)
 
 Set the service as public (default) or private (`$public = false`). If the service is set to be private, then it cannot be instantiated outside of the DI container.
 It may be instantiated only as a dependency of other public classes.
@@ -323,7 +323,7 @@ return [
 
 ```
 
-### call($method, ...$arguments)
+### $builder->call($method, ...$arguments)
 
 Call a method `$method` of the service after creation. The service **must** be an object if you want to use this feature.
 
@@ -336,7 +336,7 @@ return [
 ];
 ```
 
-### callArguments($method, $arguments, $autowire = null)
+### $builder->callArguments($method, $arguments, $autowire = null)
 
 Same as `call()` but arguments are passed as a single argument instead of using a variadic argument. The `$autowire` argument
 specifies, if autowiring may be used for resolving method arguments. Possible values:
@@ -354,7 +354,7 @@ return [
 ];
 ```
 
-### setService($service)
+### $builder->setService($service)
 
 Explicitely set the service. It has the same effect as returning the service in the service definition callback.
 
@@ -369,7 +369,7 @@ return [
 ];
 ```
 
-### get($serviceName)
+### $builder->get($serviceName)
 
 get the service of the given service name from the DI container.
 
@@ -385,6 +385,6 @@ return [
 ];
 ```
 
-### has($serviceName)
+### $builder->has($serviceName)
 
 Test if the service of the given service name does exist in the DI container.
