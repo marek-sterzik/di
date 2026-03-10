@@ -6,6 +6,7 @@ use Sterzik\DI\DI;
 use Sterzik\DI\Exception\PrivateServiceException;
 use Sterzik\DI\Exception\ServiceDoesNotExistException;
 
+use Tests\DIServices\Factory;
 use Tests\DIServices\Test1;
 use Tests\DIServices\Test2;
 use Tests\DIServices\TestValues;
@@ -137,6 +138,19 @@ class ExtendedDITest extends AbstractTestCase
         $this->assertSame($test1, $lastFactoryArgument);
         $this->assertSame($test2, $lastFactoriedObject);
         $this->assertSame($test1, $test2->getTest1());
+    }
+
+    public function testFactoryMethod(): void
+    {
+        $config = [
+            Test1::class => fn($builder) => $builder->setFactory([$builder->get(Factory::class), "createTest1"]),
+        ];
+
+        $di = $this->createDI($config);
+
+        $test1 = $di->get(Test1::class);
+
+        $this->assertInstanceof(Test1::class, $test1);
     }
 
     public function testBuilderGetAndHas(): void

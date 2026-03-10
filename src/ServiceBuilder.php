@@ -3,6 +3,7 @@
 namespace Sterzik\DI;
 
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionMethod;
 use ReflectionClass;
 
@@ -43,7 +44,7 @@ class ServiceBuilder
 
         if ($this->factory !== null) {
             $factory = $this->factory;
-            $reflectionFactory = new ReflectionFunction($factory);
+            $reflectionFactory = $this->getReflectionFactory();
             $arguments = ArgumentBuilder::buildArguments(
                 $reflectionFactory,
                 $this->di,
@@ -74,6 +75,17 @@ class ServiceBuilder
                 $arguments = [];
             }
             return new $class(...$arguments);
+        }
+    }
+
+    private function getReflectionFactory(): ReflectionFunctionAbstract
+    {
+        if (!is_array($this->factory)) {
+            return new ReflectionFunction($this->factory);
+        } elseif (count($this->factory) == 2) {
+            return new ReflectionMethod($this->factory[0], $this->factory[1]);
+        } else {
+            throw new InvalidConfigurationException("Factory callable not supported."); // @codeCoverageIgnore
         }
     }
 
@@ -179,8 +191,11 @@ class ServiceBuilder
         return $this;
     }
 
-    public function setFactory(callable $factory): self
+    public function setFactory(callable|array $factory): self
     {
+        if (!is_callable($factory)) {
+            throw new InvalidConfigurationException("Argument of setFactory() must be a callable");
+        }
         $this->factory = $factory;
         $this->class = null;
         $this->service = null;

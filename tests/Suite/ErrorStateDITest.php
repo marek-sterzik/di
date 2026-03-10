@@ -11,6 +11,7 @@ use Sterzik\DI\Exception\CircularReferenceException;
 use Sterzik\DI\Exception\ServiceDoesNotExistException;
 use Sterzik\DI\Exception\NotImplementedException;
 use Tests\DIServices\Circular1;
+use Tests\DIServices\Factory;
 use Tests\DIServices\Test1;
 use Tests\DIServices\Test2;
 use Tests\DIServices\TestValues;
@@ -108,5 +109,17 @@ class ErrorStateDITest extends AbstractTestCase
 
         $this->expectException(InvalidConfigurationException::class);
         $di->get(TestValues::class);
+    }
+
+    public function testInvalidFactory(): void
+    {
+        $config = [
+            Test1::class => fn($builder) => $builder->setFactory([$builder->get(Factory::class), "createTest1", "invalid"]),
+        ];
+
+        $di = $this->createDI($config);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $di->get(Test1::class);
     }
 }
