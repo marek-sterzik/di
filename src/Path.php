@@ -31,7 +31,8 @@ class Path
 
     public static function getRoot(): string
     {
-        return InstalledVersions::getRootPackage()['install_path'];
+        $path = InstalledVersions::getRootPackage()['install_path'];
+        return realpath($path) ?: $path;
     }
 
     public static function isWindowsPlatform(): bool
