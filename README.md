@@ -414,7 +414,7 @@ Example `services.php`:
 // after creation of MyServiceClass instance, the method setupUrl($url) will be called.
 return [
     MyServiceClass::class => fn($builder) => $builder
-        ->callArgs("setupUrl", [$url], false),
+        ->callArguments("setupUrl", [$url], false),
 ];
 ```
 
